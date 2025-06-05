@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Image, ImageBackground, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native";
+import { Image, ImageBackground, StyleSheet, Switch, Text, View } from "react-native";
 import background from "../assets/pexels-reynaldoyodia-13456519.jpg";
 import { db, onValue, ref, update } from "../firebase";
 
@@ -42,7 +42,8 @@ const Weather = () => {
 
     // Fetch weather from OpenWeatherMap
     fetch(
-      `https://api.openweathermap.org/data/2.5/weather?q=Surabaya,id&appid=${OPENWEATHER_API_KEY}&units=metric&lang=id`)
+      `https://api.openweathermap.org/data/2.5/weather?q=Surabaya,id&appid=${OPENWEATHER_API_KEY}&units=metric&lang=id`
+    )
       .then((res) => res.json())
       .then((data) => {
         const desc = data.weather[0].description;
@@ -94,7 +95,7 @@ const Weather = () => {
   const toggleHumid = () => {
     if (mode === "manual") {
       const newVal = manualHumid === "ON" ? "OFF" : "ON";
-      update(ref(db, "/manual_status"), { humid: newVal });
+      update(ref(db, "/manual_status"), { humidifier: newVal });
       setManualHumid(newVal);
     } else {
       const newVal = predHumid === "ON" ? "OFF" : "ON";
@@ -104,24 +105,24 @@ const Weather = () => {
   };
 
   let suggestionText = "";
-const acStatus = mode === "manual" ? manualAC : predAC;
-const humidStatus = mode === "manual" ? manualHumid : predHumid;
+  const acStatus = mode === "manual" ? manualAC : predAC;
+  const humidStatus = mode === "manual" ? manualHumid : predHumid;
 
-if (mode === "manual") {
-  suggestionText = ""; // Tidak menampilkan saran saat manual
-} else {
-  if (acStatus === "ON" && humidStatus === "ON") {
-    suggestionText = "Nyalakan AC dan air humidifier";
-  } else if (acStatus === "ON") {
-    suggestionText = "Nyalakan AC";
-  } else if (humidStatus === "ON") {
-    suggestionText = "Nyalakan air humidifier";
-  } else if (acStatus === "OFF" && humidStatus === "OFF") {
-    suggestionText = "Ruangan dalam kondisi baik";
+  if (mode === "manual") {
+    suggestionText = ""; // Tidak menampilkan saran saat manual
   } else {
-    suggestionText = "Menunggu data prediksi...";
+    if (acStatus === "ON" && humidStatus === "ON") {
+      suggestionText = "Nyalakan AC dan air humidifier";
+    } else if (acStatus === "ON") {
+      suggestionText = "Nyalakan AC";
+    } else if (humidStatus === "ON") {
+      suggestionText = "Nyalakan air humidifier";
+    } else if (acStatus === "OFF" && humidStatus === "OFF") {
+      suggestionText = "Ruangan dalam kondisi baik";
+    } else {
+      suggestionText = "Menunggu data prediksi...";
+    }
   }
-}
 
   return (
     <ImageBackground source={background} style={styles.container}>
@@ -139,6 +140,7 @@ if (mode === "manual") {
             value={switchValue}
           />
         </View>
+
         <View style={styles.weatherDescWrapper}>
           {weatherIcon && <Image source={{ uri: weatherIcon }} style={styles.icon} />}
           <Text style={styles.weatherDesc}>{weatherDesc}</Text>
@@ -157,28 +159,30 @@ if (mode === "manual") {
             </View>
           )}
 
-        {/* Tombol Toggle AC dan Humidifier hanya saat mode manual */}
-        {mode === "manual" && (
-        <View style={styles.buttonRow}>
-            <TouchableOpacity
-            style={[styles.button, acStatus === "ON" ? styles.buttonOn : styles.buttonOff]}
-            onPress={toggleAC}
-            >
-            <Text style={styles.buttonText}>
-                {acStatus === "ON" ? "Matikan AC" : "Nyalakan AC"}
-            </Text>
-            </TouchableOpacity>
+          {/* Switch Toggle AC dan Humidifier hanya saat mode manual */}
+          {mode === "manual" && (
+            <>
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>AC</Text>
+                <Switch
+                  trackColor={{ false: "#767577", true: "#81b0ff" }}
+                  thumbColor={acStatus === "ON" ? "#f5dd4b" : "#f4f3f4"}
+                  onValueChange={toggleAC}
+                  value={acStatus === "ON"}
+                />
+              </View>
 
-            <TouchableOpacity
-            style={[styles.button, humidStatus === "ON" ? styles.buttonOn : styles.buttonOff]}
-            onPress={toggleHumid}
-            >
-            <Text style={styles.buttonText}>
-                {humidStatus === "ON" ? "Matikan Humidifier" : "Nyalakan Humidifier"}
-            </Text>
-            </TouchableOpacity>
-        </View>
-        )}
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>Humidifier</Text>
+                <Switch
+                  trackColor={{ false: "#767577", true: "#81b0ff" }}
+                  thumbColor={humidStatus === "ON" ? "#f5dd4b" : "#f4f3f4"}
+                  onValueChange={toggleHumid}
+                  value={humidStatus === "ON"}
+                />
+              </View>
+            </>
+          )}
 
           <View style={styles.dataWrapper}>
             <View style={styles.humid}>
@@ -269,36 +273,21 @@ const styles = StyleSheet.create({
   suggestionContent: {
     fontSize: 14,
     color: "white",
-    fontWeight: "bold",
-    textAlign: "center",
     fontWeight: "600",
+    textAlign: "center",
   },
-  buttonRow: {
+  switchRow: {
     flexDirection: "row",
-    justifyContent: "space-around",
+    justifyContent: "space-between",
+    alignItems: "center",
     width: "80%",
     marginBottom: 20,
+    paddingHorizontal: 10,
   },
-  button: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "white",
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 140,
-  },
-  buttonOn: {
-    backgroundColor: "green",
-  },
-  buttonOff: {
-    backgroundColor: "red",
-  },
-  buttonText: {
+  switchLabel: {
     color: "white",
-    fontWeight: "bold",
     fontSize: 16,
+    fontWeight: "600",
   },
   dataWrapper: {
     backgroundColor: "rgba(216, 214, 214, 0.35)",
